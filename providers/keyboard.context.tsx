@@ -4,11 +4,12 @@ import {
   createContext,
   useCallback,
   useContext,
-  useRef,
+  useEffect,
+  useState,
   type ReactNode,
 } from "react"
 import { metalClickSound } from "@/lib/metal-click"
-import { playSound, type SoundPlayback } from "@/lib/sound-engine"
+import { playSound } from "@/lib/sound-engine"
 
 export type KeyConfig = {
   code: string
@@ -20,10 +21,9 @@ export type KeyConfig = {
 }
 
 type KeyboardContextValue = {
-  press: (key: string) => void
-  release: (key: string) => void
   onClick: (key: string) => void
   getKeyConfig: (key: string) => KeyConfig | undefined
+  isKeyPressed: (key: string) => boolean
 }
 
 const SPECIAL_KEYS: Record<string, KeyConfig> = {
@@ -79,61 +79,81 @@ const KEY_CONFIGS: Record<string, KeyConfig> = {
   ...SPECIAL_KEYS,
 }
 
+function codeToKeyId(code: string): string | null {
+  if (code.startsWith("Key")) {
+    return code.slice(3).toLowerCase()
+  }
+
+  switch (code) {
+    case "Space":
+      return "space"
+    case "Enter":
+      return "enter"
+    case "Backspace":
+      return "backspace"
+    case "Delete":
+      return "delete"
+    default:
+      return null
+  }
+}
+
 const KeyboardContext = createContext<KeyboardContextValue | null>(null)
 
 export function KeyboardProvider({ children }: { children: ReactNode }) {
-  const activeKeys = useRef(new Map<string, SoundPlayback>())
+  const [pressedKeys, setPressedKeys] = useState<Set<string>>(() => new Set())
 
-  const play = useCallback(
-    async (
-      key: string,
-      overrides?: { volume?: number; playbackRate?: number }
-    ) => {
-      const config = KEY_CONFIGS[key]
-      if (!config) return null
+  const onClick = useCallback((key: string) => {
+    const config = KEY_CONFIGS[key]
+    if (!config) return
 
-      return playSound(metalClickSound.dataUri, {
-        volume: overrides?.volume ?? config.volume ?? 1,
-        playbackRate: overrides?.playbackRate ?? config.pitch ?? 1,
-      })
-    },
-    []
-  )
-
-  const release = useCallback((key: string) => {
-    const playback = activeKeys.current.get(key)
-    if (!playback) return
-
-    playback.stop()
-    activeKeys.current.delete(key)
+    void playSound(metalClickSound.dataUri, {
+      volume: config.volume ?? 1,
+      playbackRate: config.pitch ?? 1,
+    })
   }, [])
-
-  const press = useCallback(
-    (key: string) => {
-      release(key)
-
-      void play(key).then((playback) => {
-        if (playback) {
-          activeKeys.current.set(key, playback)
-        }
-      })
-    },
-    [play, release]
-  )
-
-  const onClick = useCallback(
-    (key: string) => {
-      void play(key)
-    },
-    [play]
-  )
 
   const getKeyConfig = useCallback((key: string) => KEY_CONFIGS[key], [])
 
+  const isKeyPressed = useCallback(
+    (key: string) => pressedKeys.has(key),
+    [pressedKeys]
+  )
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.repeat) return
+
+      const keyId = codeToKeyId(event.code)
+      if (!keyId || !KEY_CONFIGS[keyId]) return
+
+      onClick(keyId)
+      setPressedKeys((current) => new Set(current).add(keyId))
+    }
+
+    function handleKeyUp(event: KeyboardEvent) {
+      const keyId = codeToKeyId(event.code)
+      if (!keyId || !KEY_CONFIGS[keyId]) return
+
+      setPressedKeys((current) => {
+        if (!current.has(keyId)) return current
+        const next = new Set(current)
+        next.delete(keyId)
+        return next
+      })
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    window.addEventListener("keyup", handleKeyUp)
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown)
+      window.removeEventListener("keyup", handleKeyUp)
+    }
+  }, [onClick])
+
   return (
-    <KeyboardContext.Provider
-      value={{ press, release, onClick, getKeyConfig }}
-    >
+    <KeyboardContext.Provider value={{ onClick, getKeyConfig, isKeyPressed }}>
       {children}
     </KeyboardContext.Provider>
   )

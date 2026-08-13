@@ -1,0 +1,74 @@
+"use client"
+
+import { useRef, useState, type ButtonHTMLAttributes } from "react"
+import { cn } from "@/lib/utils"
+import { useKeyboard } from "@/providers/keyboard.context"
+
+type KeyProps = {
+  keyId: string
+  className?: string
+} & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">
+
+export function Key({ keyId, className, ...props }: KeyProps) {
+  const { onClick, getKeyConfig, isKeyPressed } = useKeyboard()
+  const [pointerPressed, setPointerPressed] = useState(false)
+  const interactedViaPointer = useRef(false)
+  const config = getKeyConfig(keyId)
+  const pressed = pointerPressed || isKeyPressed(keyId)
+
+  if (!config) return null
+
+  function handlePointerDown(
+    event: React.PointerEvent<HTMLButtonElement>
+  ) {
+    event.currentTarget.setPointerCapture(event.pointerId)
+    interactedViaPointer.current = true
+    setPointerPressed(true)
+    onClick(keyId)
+    props.onPointerDown?.(event)
+  }
+
+  function handlePointerUp(event: React.PointerEvent<HTMLButtonElement>) {
+    setPointerPressed(false)
+    props.onPointerUp?.(event)
+  }
+
+  function handlePointerLeave(event: React.PointerEvent<HTMLButtonElement>) {
+    setPointerPressed(false)
+    props.onPointerLeave?.(event)
+  }
+
+  function handleClick(event: React.MouseEvent<HTMLButtonElement>) {
+    if (!interactedViaPointer.current) {
+      onClick(keyId)
+    }
+    interactedViaPointer.current = false
+    props.onClick?.(event)
+  }
+
+  return (
+    <button
+      type="button"
+      aria-label={config.label}
+      className={cn(
+        "group relative flex aspect-square size-15 items-center justify-center overflow-hidden rounded-lg",
+        "border-[0.5px] border-black/10 bg-white",
+        "shadow-[0_1px_2px_0_rgb(0_0_0/0.1),0_2px_3px_0_rgb(0_0_0/0.05),0_-0.5px_1px_0_rgb(0_0_0/0.04),-0.5px_0_1px_0_rgb(0_0_0/0.05),0.5px_0_1px_0_rgb(0_0_0/0.05)]",
+        "transition-[transform,box-shadow,background-color] duration-75 ease-out",
+        "select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300/50",
+        pressed &&
+          "translate-y-px bg-neutral-50 shadow-[0_0.5px_1px_0_rgb(0_0_0/0.08)]",
+        className
+      )}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
+      onClick={handleClick}
+      {...props}
+    >
+      <span className="relative z-10 text-[1.05rem] font-medium tracking-tight text-neutral-500 transition-colors group-active:text-neutral-600">
+        {config.label}
+      </span>
+    </button>
+  )
+}
