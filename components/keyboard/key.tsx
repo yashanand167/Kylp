@@ -68,7 +68,7 @@ export function Key({ keyId, className, ...props }: KeyProps) {
         "transition-[transform,box-shadow,background-color,border-color] duration-75 ease-out",
         "select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400/40",
         pressed &&
-          "translate-y-px border-neutral-400/25 bg-neutral-50 shadow-[0_1px_0_0_rgb(0_0_0/0.08),inset_0_2px_4px_rgb(0_0_0/0.12)]",
+          "translate-y-px border-neutral-400/25 bg-neutral-50 shadow-[0_1px_0_0_rgb(0_0_0/0.06),inset_0_1px_0_0_rgb(0_0_0/0.05)]",
         className
       )}
       onPointerDown={handlePointerDown}
