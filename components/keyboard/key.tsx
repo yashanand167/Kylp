@@ -61,12 +61,12 @@ export function Key({ keyId, className, ...props }: KeyProps) {
       className={cn(
         "group relative flex items-center justify-center overflow-hidden rounded-lg",
         sizeClasses[config.size ?? "normal"],
-        "border-[0.5px] border-black/12 bg-white",
+        "border-[0.5px] border-neutral-400/35 bg-white",
         "shadow-[0_1px_1px_0_rgb(0_0_0/0.08),0_2px_4px_0_rgb(0_0_0/0.06),inset_0_1px_0_rgb(255_255_255/0.9)]",
-        "transition-[transform,box-shadow,background-color] duration-75 ease-out",
+        "transition-[transform,box-shadow,background-color,border-color] duration-75 ease-out",
         "select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400/40",
         pressed &&
-          "translate-y-px border-black/8 bg-neutral-50 shadow-[inset_0_1px_3px_rgb(0_0_0/0.1)]",
+          "translate-y-px border-neutral-400/25 bg-neutral-50 shadow-[inset_0_1px_3px_rgb(0_0_0/0.1)]",
         className
       )}
       onPointerDown={handlePointerDown}
