@@ -1,3 +1,5 @@
+import type { PlaySoundOptions, SoundPlayback } from "@/lib/sound-engine";
+import { playSound } from "@/lib/sound-engine";
 import type { SoundAsset } from "@/lib/sound-types";
 
 export const metalClickSound: SoundAsset = {
@@ -8,3 +10,21 @@ export const metalClickSound: SoundAsset = {
   license: "CC0",
   author: "Kenney",
 };
+
+/** Tuned to feel closer to a mechanical keyboard clack than a raw metal tap. */
+export const metalClickKeyboardProfile = {
+  volume: 0.84,
+  playbackRate: 1.2,
+  highPassHz: 820,
+  peakHz: 3400,
+  peakGainDb: 4.5,
+} as const satisfies PlaySoundOptions;
+
+export function playMetalClick(
+  overrides: PlaySoundOptions = {}
+): Promise<SoundPlayback> {
+  return playSound(metalClickSound.dataUri, {
+    ...metalClickKeyboardProfile,
+    ...overrides,
+  });
+}

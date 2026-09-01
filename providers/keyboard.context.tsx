@@ -8,94 +8,21 @@ import {
   useState,
   type ReactNode,
 } from "react"
-import { metalClickSound } from "@/lib/metal-click"
-import { playSound } from "@/lib/sound-engine"
+import {
+  codeToKeyId,
+  KEY_CONFIGS,
+  KEYBOARD_LAYOUT,
+  type KeyConfig,
+} from "@/lib/keyboard-keys"
+import { playMetalClick } from "@/lib/metal-click"
 
-export type KeyConfig = {
-  code: string
-  label: string
-  sound: string
-  volume?: number
-  pitch?: number
-  modifier?: boolean
-}
+export type { KeyConfig }
+export { KEYBOARD_LAYOUT, KEY_CONFIGS }
 
 type KeyboardContextValue = {
   onClick: (key: string) => void
   getKeyConfig: (key: string) => KeyConfig | undefined
   isKeyPressed: (key: string) => boolean
-}
-
-const SPECIAL_KEYS: Record<string, KeyConfig> = {
-  space: {
-    code: "space",
-    label: "Space",
-    sound: metalClickSound.name,
-    volume: 1,
-    pitch: 1,
-    modifier: true,
-  },
-  enter: {
-    code: "enter",
-    label: "Enter",
-    sound: metalClickSound.name,
-    volume: 1,
-    pitch: 1,
-    modifier: true,
-  },
-  backspace: {
-    code: "backspace",
-    label: "Backspace",
-    sound: metalClickSound.name,
-    volume: 1,
-    pitch: 1,
-    modifier: true,
-  },
-  delete: {
-    code: "delete",
-    label: "Delete",
-    sound: metalClickSound.name,
-    volume: 1,
-    pitch: 1,
-    modifier: true,
-  },
-}
-
-const LETTER_KEYS = Object.fromEntries(
-  "abcdefghijklmnopqrstuvwxyz".split("").map((letter) => [
-    letter,
-    {
-      code: letter,
-      label: letter.toUpperCase(),
-      sound: metalClickSound.name,
-      volume: 1,
-      pitch: 1,
-    } satisfies KeyConfig,
-  ])
-) as Record<string, KeyConfig>
-
-const KEY_CONFIGS: Record<string, KeyConfig> = {
-  ...LETTER_KEYS,
-  ...SPECIAL_KEYS,
-}
-
-function codeToKeyId(code: string): string | null {
-  if (code.startsWith("Key")) {
-    return code.slice(3).toLowerCase()
-  }
-
-  switch (code) {
-    case "Space":
-      return "space"
-    case "Enter":
-      return "enter"
-    case "Backspace":
-      return "backspace"
-    case "Delete":
-      return "delete"
-    default:
-      return null
-  }
 }
 
 const KeyboardContext = createContext<KeyboardContextValue | null>(null)
@@ -107,8 +34,7 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
     const config = KEY_CONFIGS[key]
     if (!config) return
 
-    void playSound(metalClickSound.dataUri, {
-      volume: config.volume ?? 1,
+    void playMetalClick({
       playbackRate: config.pitch ?? 1,
     })
   }, [])
