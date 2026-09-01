@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { MobileWarning } from "@/components/mobile-warning";
+import { SileoToaster } from "@/components/sileo-toaster";
 import { KeyboardProvider } from "@/providers/keyboard.context";
 import "./globals.css";
 
@@ -25,6 +27,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-background font-sans text-foreground">
+        <SileoToaster />
+        <MobileWarning />
         <KeyboardProvider>{children}</KeyboardProvider>
       </body>
     </html>
