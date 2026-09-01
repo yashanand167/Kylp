@@ -58,11 +58,106 @@ export function isTypingKeyboardEvent(event: KeyboardEvent): boolean {
   return keyboardEventToInput(event) !== null
 }
 
-export function countCorrectCharacters(target: string, typed: string): number {
+export function getNextWordStart(target: string, currentIndex: number): number {
+  if (currentIndex >= target.length) {
+    return target.length
+  }
+
+  let index = currentIndex
+
+  while (index < target.length && target[index] !== " ") {
+    index++
+  }
+
+  while (index < target.length && target[index] === " ") {
+    index++
+  }
+
+  return index
+}
+
+export type WordSegment = {
+  text: string
+  start: number
+  end: number
+}
+
+export type WordStatus = "upcoming" | "current" | "correct" | "incorrect"
+
+export function getWordSegments(target: string): WordSegment[] {
+  const segments: WordSegment[] = []
+  let index = 0
+
+  while (index < target.length) {
+    if (target[index] === " ") {
+      index++
+      continue
+    }
+
+    const start = index
+
+    while (index < target.length && target[index] !== " ") {
+      index++
+    }
+
+    segments.push({
+      text: target.slice(start, index),
+      start,
+      end: index,
+    })
+  }
+
+  return segments
+}
+
+export function getCurrentWordIndex(
+  segments: WordSegment[],
+  cursor: number
+): number {
+  for (let index = 0; index < segments.length; index++) {
+    const segment = segments[index]
+
+    if (cursor <= segment.end) {
+      return index
+    }
+  }
+
+  return Math.max(segments.length - 1, 0)
+}
+
+export function getWordStatus(
+  segment: WordSegment,
+  wordIndex: number,
+  currentWordIndex: number,
+  target: string,
+  typedByIndex: Map<number, string>
+): WordStatus {
+  if (wordIndex > currentWordIndex) {
+    return "upcoming"
+  }
+
+  if (wordIndex === currentWordIndex) {
+    return "current"
+  }
+
+  for (let index = segment.start; index < segment.end; index++) {
+    if (!typedByIndex.has(index) || typedByIndex.get(index) !== target[index]) {
+      return "incorrect"
+    }
+  }
+
+  return "correct"
+}
+
+export function countCorrectCharacters(
+  target: string,
+  typedByIndex: Map<number, string>,
+  cursor: number
+): number {
   let correct = 0
 
-  for (let index = 0; index < typed.length; index++) {
-    if (typed[index] === target[index]) {
+  for (let index = 0; index < cursor; index++) {
+    if (typedByIndex.get(index) === target[index]) {
       correct++
     }
   }

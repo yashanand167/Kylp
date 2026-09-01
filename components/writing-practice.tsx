@@ -1,11 +1,15 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
   calculateWpm,
   countCorrectCharacters,
+  getCurrentWordIndex,
+  getNextWordStart,
+  getWordSegments,
+  getWordStatus,
   type TypingInput,
 } from "@/lib/typing"
 import {
@@ -19,24 +23,29 @@ import { useKeyboard } from "@/providers/keyboard.context"
 
 type TestPhase = "idle" | "running" | "finished"
 
-function applyTypingInput(current: string, input: TypingInput): string {
-  if (input.type === "backspace") {
-    return current.slice(0, -1)
-  }
-
-  return current + input.value
-}
-
 export function WritingPractice() {
   const { subscribeToInput } = useKeyboard()
   const [includePunctuation, setIncludePunctuation] = useState(false)
   const [phase, setPhase] = useState<TestPhase>("idle")
   const [targetText, setTargetText] = useState("")
-  const [typedText, setTypedText] = useState("")
+  const [typedByIndex, setTypedByIndex] = useState<Map<number, string>>(
+    () => new Map()
+  )
+  const [cursor, setCursor] = useState(0)
   const [secondsLeft, setSecondsLeft] = useState(PRACTICE_TEST_DURATION_SECONDS)
   const [wpm, setWpm] = useState(0)
-  const typedRef = useRef("")
+  const typedByIndexRef = useRef<Map<number, string>>(new Map())
+  const cursorRef = useRef(0)
   const targetRef = useRef("")
+
+  const wordSegments = useMemo(
+    () => getWordSegments(targetText),
+    [targetText]
+  )
+  const currentWordIndex = useMemo(
+    () => getCurrentWordIndex(wordSegments, cursor),
+    [wordSegments, cursor]
+  )
 
   const generateOptions = useCallback(
     (wordCount: number) => ({
@@ -46,23 +55,30 @@ export function WritingPractice() {
     [includePunctuation]
   )
 
+  const resetTypingState = useCallback(() => {
+    typedByIndexRef.current = new Map()
+    cursorRef.current = 0
+    setTypedByIndex(new Map())
+    setCursor(0)
+  }, [])
+
   const resetTest = useCallback(() => {
     const initialText = generatePracticePhrase(
       generateOptions(PRACTICE_INITIAL_WORD_COUNT)
     )
     targetRef.current = initialText
-    typedRef.current = ""
+    resetTypingState()
     setTargetText(initialText)
-    setTypedText("")
     setSecondsLeft(PRACTICE_TEST_DURATION_SECONDS)
     setWpm(0)
     setPhase("idle")
-  }, [generateOptions])
+  }, [generateOptions, resetTypingState])
 
   const finishTest = useCallback(() => {
     const correctCharacters = countCorrectCharacters(
       targetRef.current,
-      typedRef.current
+      typedByIndexRef.current,
+      cursorRef.current
     )
     setWpm(calculateWpm(correctCharacters, PRACTICE_TEST_DURATION_SECONDS))
     setPhase("finished")
@@ -73,13 +89,42 @@ export function WritingPractice() {
       generateOptions(PRACTICE_INITIAL_WORD_COUNT)
     )
     targetRef.current = initialText
-    typedRef.current = ""
+    resetTypingState()
     setTargetText(initialText)
-    setTypedText("")
     setSecondsLeft(PRACTICE_TEST_DURATION_SECONDS)
     setWpm(0)
     setPhase("running")
-  }, [generateOptions])
+  }, [generateOptions, resetTypingState])
+
+  const applyInput = useCallback((input: TypingInput) => {
+    const target = targetRef.current
+
+    if (input.type === "backspace") {
+      if (cursorRef.current === 0) return
+
+      cursorRef.current -= 1
+      typedByIndexRef.current.delete(cursorRef.current)
+      setCursor(cursorRef.current)
+      setTypedByIndex(new Map(typedByIndexRef.current))
+      return
+    }
+
+    if (input.value === " ") {
+      const nextWordStart = getNextWordStart(target, cursorRef.current)
+      if (nextWordStart === cursorRef.current) return
+
+      cursorRef.current = nextWordStart
+      setCursor(nextWordStart)
+      return
+    }
+
+    if (cursorRef.current >= target.length) return
+
+    typedByIndexRef.current.set(cursorRef.current, input.value)
+    cursorRef.current += 1
+    setCursor(cursorRef.current)
+    setTypedByIndex(new Map(typedByIndexRef.current))
+  }, [])
 
   useEffect(() => {
     resetTest()
@@ -122,14 +167,8 @@ export function WritingPractice() {
   useEffect(() => {
     if (phase !== "running") return
 
-    return subscribeToInput((input) => {
-      setTypedText((current) => {
-        const next = applyTypingInput(current, input)
-        typedRef.current = next
-        return next
-      })
-    })
-  }, [phase, subscribeToInput])
+    return subscribeToInput(applyInput)
+  }, [applyInput, phase, subscribeToInput])
 
   function togglePunctuation() {
     if (phase === "running") return
@@ -159,27 +198,80 @@ export function WritingPractice() {
         )}
       </div>
 
-      <p className="min-h-32 w-full text-left text-xl leading-8 tracking-tight sm:text-2xl sm:leading-9">
-        {targetText.split("").map((character, index) => {
-          const typedCharacter = typedText[index]
-          const isTyped = index < typedText.length
-          const isCurrent = index === typedText.length
+      {phase === "running" && wordSegments[currentWordIndex] && (
+        <p className="text-sm text-muted-foreground">
+          Word {currentWordIndex + 1} of {wordSegments.length}
+        </p>
+      )}
+
+      <p className="min-h-32 w-full text-left text-xl leading-10 tracking-tight sm:text-2xl sm:leading-11">
+        {wordSegments.map((segment, wordIndex) => {
+          const status = getWordStatus(
+            segment,
+            wordIndex,
+            currentWordIndex,
+            targetText,
+            typedByIndex
+          )
 
           return (
-            <span
-              key={`${index}-${character}`}
-              className={cn(
-                isTyped &&
-                  typedCharacter === character &&
-                  "text-foreground",
-                isTyped &&
-                  typedCharacter !== character &&
-                  "bg-destructive/15 text-destructive",
-                !isTyped && "text-muted-foreground/70",
-                isCurrent && phase === "running" && "border-b-2 border-foreground text-foreground"
+            <span key={`${segment.start}-${segment.text}`} className="inline">
+              {wordIndex > 0 && (
+                <span
+                  className={cn(
+                    "text-muted-foreground/40",
+                    wordIndex <= currentWordIndex && "text-muted-foreground/60"
+                  )}
+                >
+                  {" "}
+                </span>
               )}
-            >
-              {character}
+              <span
+                className={cn(
+                  "inline-block rounded-md px-1 transition-colors",
+                  status === "current" &&
+                    "bg-neutral-900/8 ring-1 ring-neutral-900/10",
+                  status === "correct" && "text-emerald-700",
+                  status === "incorrect" && "text-destructive",
+                  status === "upcoming" && "text-muted-foreground/45"
+                )}
+              >
+                {segment.text.split("").map((character, offset) => {
+                  const index = segment.start + offset
+                  const typedCharacter = typedByIndex.get(index)
+                  const isTyped = typedCharacter !== undefined
+                  const isSkipped = !isTyped && index < cursor
+                  const isCurrent = index === cursor
+
+                  return (
+                    <span
+                      key={`${index}-${character}`}
+                      className={cn(
+                        status === "current" &&
+                          isTyped &&
+                          typedCharacter === character &&
+                          "text-foreground",
+                        status === "current" &&
+                          isTyped &&
+                          typedCharacter !== character &&
+                          "text-destructive",
+                        status === "current" &&
+                          isSkipped &&
+                          "text-destructive",
+                        status === "current" &&
+                          !isTyped &&
+                          !isSkipped &&
+                          "text-muted-foreground/70",
+                        isCurrent &&
+                          phase === "running" &&
+                          "underline decoration-2 underline-offset-4"
+                      )}
+                    >
+                      {character}
+                    </span>
+                  )
+                })}
+              </span>
             </span>
           )
         })}
