@@ -6,10 +6,12 @@ import type { KeyConfig } from "@/lib/keyboard-keys"
 import { useKeyboard } from "@/providers/keyboard.context"
 
 const sizeClasses: Record<NonNullable<KeyConfig["size"]>, string> = {
-  normal: "aspect-square size-15",
-  wide: "h-15 min-w-20 px-3",
-  "extra-wide": "h-15 min-w-24 px-3",
-  space: "h-15 min-w-64 px-3",
+  normal: "aspect-square size-8 sm:size-10 md:size-12 lg:size-15",
+  wide: "h-8 min-w-12 px-1.5 sm:h-10 sm:min-w-14 sm:px-2 md:h-12 md:min-w-16 lg:h-15 lg:min-w-20",
+  "extra-wide":
+    "h-8 min-w-14 px-1.5 sm:h-10 sm:min-w-16 md:h-12 md:min-w-20 lg:h-15 lg:min-w-24",
+  space:
+    "h-8 min-w-28 px-1.5 sm:h-10 sm:min-w-36 md:h-12 md:min-w-48 lg:h-15 lg:min-w-64",
 }
 
 type KeyProps = {
@@ -59,7 +61,7 @@ export function Key({ keyId, className, ...props }: KeyProps) {
       type="button"
       aria-label={config.label}
       className={cn(
-        "group relative flex items-center justify-center overflow-hidden rounded-lg",
+        "group relative flex items-center justify-center overflow-hidden rounded-md sm:rounded-lg",
         sizeClasses[config.size ?? "normal"],
         "border-[0.5px] border-neutral-400/35 bg-white",
         "shadow-[0_1px_1px_0_rgb(0_0_0/0.08),0_2px_4px_0_rgb(0_0_0/0.06),inset_0_1px_0_rgb(255_255_255/0.9)]",
@@ -79,7 +81,9 @@ export function Key({ keyId, className, ...props }: KeyProps) {
         className={cn(
           "relative z-10 font-medium tracking-tight text-neutral-600 transition-colors group-active:text-neutral-700",
           "drop-shadow-[0_1px_0_rgb(255_255_255/0.85)]",
-          config.modifier ? "text-xs uppercase" : "text-[1.05rem]"
+          config.modifier
+            ? "text-[0.55rem] sm:text-[0.65rem] md:text-xs uppercase"
+            : "text-[0.75rem] sm:text-[0.9rem] md:text-[1.05rem]"
         )}
       >
         {config.label}

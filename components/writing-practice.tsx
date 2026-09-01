@@ -176,7 +176,7 @@ export function WritingPractice() {
   }
 
   return (
-    <section className="flex w-full max-w-4xl flex-col items-center gap-5 px-4 font-sans">
+    <section className="flex w-full max-w-4xl flex-col items-center gap-4 px-2 pt-32 font-sans sm:gap-5 sm:px-4 sm:pt-0">
       <div className="flex flex-wrap items-center justify-center gap-2">
         <Button
           type="button"
@@ -204,7 +204,7 @@ export function WritingPractice() {
         </p>
       )}
 
-      <p className="min-h-32 w-full text-left text-xl leading-10 tracking-tight sm:text-2xl sm:leading-11">
+      <p className="min-h-24 w-full text-center text-lg leading-8 tracking-tight sm:min-h-32 sm:text-left sm:text-xl sm:leading-10 md:text-2xl md:leading-11">
         {wordSegments.map((segment, wordIndex) => {
           const status = getWordStatus(
             segment,

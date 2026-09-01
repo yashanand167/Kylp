@@ -1,11 +1,15 @@
 "use client"
 
 import { Toaster } from "sileo"
+import { useMobile } from "@/hooks/use-mobile"
 
 export function SileoToaster() {
+  const isMobile = useMobile()
+
   return (
     <Toaster
       position="top-center"
+      offset={isMobile ? { top: 12 } : { top: 16 }}
       options={{
         fill: "#000000",
         styles: {
