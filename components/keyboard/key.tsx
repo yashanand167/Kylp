@@ -61,12 +61,12 @@ export function Key({ keyId, className, ...props }: KeyProps) {
       className={cn(
         "group relative flex items-center justify-center overflow-hidden rounded-lg",
         sizeClasses[config.size ?? "normal"],
-        "border-[0.5px] border-black/10 bg-white",
-        "shadow-[0_1px_2px_0_rgb(0_0_0/0.1),0_2px_3px_0_rgb(0_0_0/0.05),0_-0.5px_1px_0_rgb(0_0_0/0.04),-0.5px_0_1px_0_rgb(0_0_0/0.05),0.5px_0_1px_0_rgb(0_0_0/0.05)]",
+        "border-[0.5px] border-black/12 bg-white",
+        "shadow-[0_1px_1px_0_rgb(0_0_0/0.08),0_2px_4px_0_rgb(0_0_0/0.06),inset_0_1px_0_rgb(255_255_255/0.9)]",
         "transition-[transform,box-shadow,background-color] duration-75 ease-out",
-        "select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-300/50",
+        "select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-400/40",
         pressed &&
-          "translate-y-px bg-neutral-50 shadow-[0_0.5px_1px_0_rgb(0_0_0/0.08)]",
+          "translate-y-px border-black/8 bg-neutral-50 shadow-[inset_0_1px_3px_rgb(0_0_0/0.1)]",
         className
       )}
       onPointerDown={handlePointerDown}
@@ -77,8 +77,9 @@ export function Key({ keyId, className, ...props }: KeyProps) {
     >
       <span
         className={cn(
-          "relative z-10 font-medium tracking-tight text-neutral-500 transition-colors group-active:text-neutral-600",
-          config.modifier ? "text-sm" : "text-[1.05rem]"
+          "relative z-10 font-medium tracking-tight text-neutral-600 transition-colors group-active:text-neutral-700",
+          "drop-shadow-[0_1px_0_rgb(255_255_255/0.85)]",
+          config.modifier ? "text-xs uppercase" : "text-[1.05rem]"
         )}
       >
         {config.label}
