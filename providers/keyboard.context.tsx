@@ -29,6 +29,7 @@ type KeyboardContextValue = {
   pressKey: (key: string) => void
   getKeyConfig: (key: string) => KeyConfig | undefined
   isKeyPressed: (key: string) => boolean
+  setSoundEnabled: (enabled: boolean) => void
   subscribeToInput: (listener: (input: TypingInput) => void) => () => void
 }
 
@@ -37,12 +38,19 @@ const KeyboardContext = createContext<KeyboardContextValue | null>(null)
 export function KeyboardProvider({ children }: { children: ReactNode }) {
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(() => new Set())
   const inputListeners = useRef(new Set<(input: TypingInput) => void>())
+  const soundEnabledRef = useRef(false)
+
+  const setSoundEnabled = useCallback((enabled: boolean) => {
+    soundEnabledRef.current = enabled
+  }, [])
 
   const emitInput = useCallback((input: TypingInput) => {
     inputListeners.current.forEach((listener) => listener(input))
   }, [])
 
   const playKey = useCallback((key: string) => {
+    if (!soundEnabledRef.current) return
+
     const config = KEY_CONFIGS[key]
     if (!config) return
 
@@ -113,7 +121,13 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
 
   return (
     <KeyboardContext.Provider
-      value={{ pressKey, getKeyConfig, isKeyPressed, subscribeToInput }}
+      value={{
+        pressKey,
+        getKeyConfig,
+        isKeyPressed,
+        setSoundEnabled,
+        subscribeToInput,
+      }}
     >
       {children}
     </KeyboardContext.Provider>

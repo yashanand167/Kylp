@@ -25,7 +25,7 @@ import { useKeyboard } from "@/providers/keyboard.context"
 type TestPhase = "idle" | "running" | "finished"
 
 export function WritingPractice() {
-  const { subscribeToInput } = useKeyboard()
+  const { subscribeToInput, setSoundEnabled } = useKeyboard()
   const [includePunctuation, setIncludePunctuation] = useState(false)
   const [phase, setPhase] = useState<TestPhase>("idle")
   const [targetText, setTargetText] = useState("")
@@ -164,6 +164,11 @@ export function WritingPractice() {
 
     return () => window.clearInterval(appendWords)
   }, [generateOptions, phase])
+
+  useEffect(() => {
+    setSoundEnabled(phase === "running")
+    return () => setSoundEnabled(false)
+  }, [phase, setSoundEnabled])
 
   useEffect(() => {
     if (phase !== "running") return
