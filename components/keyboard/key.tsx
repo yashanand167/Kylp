@@ -18,7 +18,7 @@ type KeyProps = {
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children">
 
 export function Key({ keyId, className, ...props }: KeyProps) {
-  const { onClick, getKeyConfig, isKeyPressed } = useKeyboard()
+  const { pressKey, getKeyConfig, isKeyPressed } = useKeyboard()
   const [pointerPressed, setPointerPressed] = useState(false)
   const interactedViaPointer = useRef(false)
   const config = getKeyConfig(keyId)
@@ -32,7 +32,7 @@ export function Key({ keyId, className, ...props }: KeyProps) {
     event.currentTarget.setPointerCapture(event.pointerId)
     interactedViaPointer.current = true
     setPointerPressed(true)
-    onClick(keyId)
+    pressKey(keyId)
     props.onPointerDown?.(event)
   }
 
@@ -48,7 +48,7 @@ export function Key({ keyId, className, ...props }: KeyProps) {
 
   function handleClick(event: React.MouseEvent<HTMLButtonElement>) {
     if (!interactedViaPointer.current) {
-      onClick(keyId)
+      pressKey(keyId)
     }
     interactedViaPointer.current = false
     props.onClick?.(event)

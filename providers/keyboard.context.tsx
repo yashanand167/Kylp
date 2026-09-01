@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
   type ReactNode,
 } from "react"
@@ -15,22 +16,33 @@ import {
   type KeyConfig,
 } from "@/lib/keyboard-keys"
 import { playMetalClick } from "@/lib/metal-click"
+import {
+  keyIdToInput,
+  keyboardEventToInput,
+  type TypingInput,
+} from "@/lib/typing"
 
 export type { KeyConfig }
 export { KEYBOARD_LAYOUT, KEY_CONFIGS }
 
 type KeyboardContextValue = {
-  onClick: (key: string) => void
+  pressKey: (key: string) => void
   getKeyConfig: (key: string) => KeyConfig | undefined
   isKeyPressed: (key: string) => boolean
+  subscribeToInput: (listener: (input: TypingInput) => void) => () => void
 }
 
 const KeyboardContext = createContext<KeyboardContextValue | null>(null)
 
 export function KeyboardProvider({ children }: { children: ReactNode }) {
   const [pressedKeys, setPressedKeys] = useState<Set<string>>(() => new Set())
+  const inputListeners = useRef(new Set<(input: TypingInput) => void>())
 
-  const onClick = useCallback((key: string) => {
+  const emitInput = useCallback((input: TypingInput) => {
+    inputListeners.current.forEach((listener) => listener(input))
+  }, [])
+
+  const playKey = useCallback((key: string) => {
     const config = KEY_CONFIGS[key]
     if (!config) return
 
@@ -39,12 +51,33 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const pressKey = useCallback(
+    (key: string, event?: KeyboardEvent) => {
+      if (!KEY_CONFIGS[key]) return
+
+      playKey(key)
+
+      const input = event ? keyboardEventToInput(event) : keyIdToInput(key)
+      if (input) {
+        emitInput(input)
+      }
+    },
+    [emitInput, playKey]
+  )
+
   const getKeyConfig = useCallback((key: string) => KEY_CONFIGS[key], [])
 
   const isKeyPressed = useCallback(
     (key: string) => pressedKeys.has(key),
     [pressedKeys]
   )
+
+  const subscribeToInput = useCallback((listener: (input: TypingInput) => void) => {
+    inputListeners.current.add(listener)
+    return () => {
+      inputListeners.current.delete(listener)
+    }
+  }, [])
 
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
@@ -53,7 +86,7 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
       const keyId = codeToKeyId(event.code)
       if (!keyId || !KEY_CONFIGS[keyId]) return
 
-      onClick(keyId)
+      pressKey(keyId, event)
       setPressedKeys((current) => new Set(current).add(keyId))
     }
 
@@ -76,10 +109,12 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("keydown", handleKeyDown)
       window.removeEventListener("keyup", handleKeyUp)
     }
-  }, [onClick])
+  }, [pressKey])
 
   return (
-    <KeyboardContext.Provider value={{ onClick, getKeyConfig, isKeyPressed }}>
+    <KeyboardContext.Provider
+      value={{ pressKey, getKeyConfig, isKeyPressed, subscribeToInput }}
+    >
       {children}
     </KeyboardContext.Provider>
   )
