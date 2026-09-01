@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -177,7 +178,21 @@ export function WritingPractice() {
 
   return (
     <section className="flex w-full max-w-4xl flex-col items-center gap-4 px-2 pt-32 font-sans sm:gap-5 sm:px-4 sm:pt-0">
-      <div className="flex flex-wrap items-center justify-center gap-2">
+      <div className="flex w-full flex-wrap items-center justify-center gap-3 sm:gap-4">
+        <div className="flex shrink-0 items-center gap-2.5">
+          <Image
+            src="/kylp.png"
+            alt="kylp"
+            width={36}
+            height={36}
+            className="size-8 rounded-lg sm:size-9"
+            priority
+          />
+          <span className="text-lg font-medium tracking-tight text-foreground sm:text-xl">
+            kylp
+          </span>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-2">
         <Button
           type="button"
           variant={includePunctuation ? "default" : "outline"}
@@ -196,6 +211,7 @@ export function WritingPractice() {
             {phase === "finished" ? "Try again" : "Start"}
           </Button>
         )}
+        </div>
       </div>
 
       {phase === "running" && wordSegments[currentWordIndex] && (
