@@ -58,6 +58,13 @@ export function isTypingKeyboardEvent(event: KeyboardEvent): boolean {
   return keyboardEventToInput(event) !== null
 }
 
+export function getWordSegmentAtCursor(
+  segments: WordSegment[],
+  cursor: number
+): WordSegment | undefined {
+  return segments[getCurrentWordIndex(segments, cursor)]
+}
+
 export function getNextWordStart(target: string, currentIndex: number): number {
   if (currentIndex >= target.length) {
     return target.length

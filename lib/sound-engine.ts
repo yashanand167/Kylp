@@ -35,6 +35,8 @@ export interface PlaySoundOptions {
   peakHz?: number;
   /** Peaking EQ gain in dB */
   peakGainDb?: number;
+  /** Low-pass cutoff in Hz to soften harsh high-end ring */
+  lowPassHz?: number;
 }
 
 export interface SoundPlayback {
@@ -52,6 +54,7 @@ export async function playSound(
     highPassHz,
     peakHz,
     peakGainDb,
+    lowPassHz,
   } = options;
   const ctx = getAudioContext();
   if (ctx.state === "suspended") {
@@ -85,6 +88,15 @@ export async function playSound(
     peak.Q.value = 1.1;
     output.connect(peak);
     output = peak;
+  }
+
+  if (lowPassHz !== undefined) {
+    const lowPass = ctx.createBiquadFilter();
+    lowPass.type = "lowpass";
+    lowPass.frequency.value = lowPassHz;
+    lowPass.Q.value = 0.7;
+    output.connect(lowPass);
+    output = lowPass;
   }
 
   output.connect(gain);

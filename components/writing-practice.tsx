@@ -9,6 +9,7 @@ import {
   countCorrectCharacters,
   getCurrentWordIndex,
   getNextWordStart,
+  getWordSegmentAtCursor,
   getWordSegments,
   getWordStatus,
   type TypingInput,
@@ -111,6 +112,12 @@ export function WritingPractice() {
     }
 
     if (input.value === " ") {
+      const segments = getWordSegments(target)
+      const currentSegment = getWordSegmentAtCursor(segments, cursorRef.current)
+
+      // Only advance after the current word is fully typed.
+      if (!currentSegment || cursorRef.current < currentSegment.end) return
+
       const nextWordStart = getNextWordStart(target, cursorRef.current)
       if (nextWordStart === cursorRef.current) return
 

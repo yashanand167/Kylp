@@ -90,15 +90,19 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.repeat) return
+      if (event.metaKey || event.ctrlKey || event.altKey) return
 
       const keyId = codeToKeyId(event.code)
       if (!keyId || !KEY_CONFIGS[keyId]) return
 
       pressKey(keyId, event)
+      event.preventDefault()
       setPressedKeys((current) => new Set(current).add(keyId))
     }
 
     function handleKeyUp(event: KeyboardEvent) {
+      if (event.metaKey || event.ctrlKey || event.altKey) return
+
       const keyId = codeToKeyId(event.code)
       if (!keyId || !KEY_CONFIGS[keyId]) return
 

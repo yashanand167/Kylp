@@ -31,6 +31,7 @@ export function Key({ keyId, className, ...props }: KeyProps) {
   function handlePointerDown(
     event: React.PointerEvent<HTMLButtonElement>
   ) {
+    event.preventDefault()
     event.currentTarget.setPointerCapture(event.pointerId)
     interactedViaPointer.current = true
     setPointerPressed(true)
@@ -59,6 +60,7 @@ export function Key({ keyId, className, ...props }: KeyProps) {
   return (
     <button
       type="button"
+      tabIndex={-1}
       aria-label={config.label}
       className={cn(
         "group relative flex items-center justify-center overflow-visible rounded-md sm:rounded-lg",

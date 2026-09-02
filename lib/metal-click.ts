@@ -11,13 +11,14 @@ export const metalClickSound: SoundAsset = {
   author: "Kenney",
 };
 
-/** Tuned to feel closer to a mechanical keyboard clack than a raw metal tap. */
+/** Softer keyboard click: warmer body, less metallic high-end ring. */
 export const metalClickKeyboardProfile = {
-  volume: 0.84,
-  playbackRate: 1.2,
-  highPassHz: 820,
-  peakHz: 3400,
-  peakGainDb: 4.5,
+  volume: 0.76,
+  playbackRate: 1.02,
+  highPassHz: 420,
+  peakHz: 1900,
+  peakGainDb: 1.8,
+  lowPassHz: 5200,
 } as const satisfies PlaySoundOptions;
 
 export function playMetalClick(
