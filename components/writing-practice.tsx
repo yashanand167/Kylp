@@ -39,6 +39,7 @@ export function WritingPractice() {
   const typedByIndexRef = useRef<Map<number, string>>(new Map())
   const cursorRef = useRef(0)
   const targetRef = useRef("")
+  const inputUnsubscribeRef = useRef<(() => void) | null>(null)
 
   const wordSegments = useMemo(
     () => getWordSegments(targetText),
@@ -64,39 +65,26 @@ export function WritingPractice() {
     setCursor(0)
   }, [])
 
-  const resetTest = useCallback(() => {
-    const initialText = generatePracticePhrase(
-      generateOptions(PRACTICE_INITIAL_WORD_COUNT)
-    )
-    targetRef.current = initialText
-    resetTypingState()
-    setTargetText(initialText)
-    setSecondsLeft(PRACTICE_TEST_DURATION_SECONDS)
-    setWpm(0)
-    setPhase("idle")
-  }, [generateOptions, resetTypingState])
+  const loadIdlePhrase = useCallback(
+    (withPunctuation: boolean) => {
+      const text = generatePracticePhrase({
+        wordCount: PRACTICE_INITIAL_WORD_COUNT,
+        includePunctuation: withPunctuation,
+      })
+      targetRef.current = text
+      resetTypingState()
+      setTargetText(text)
+      setSecondsLeft(PRACTICE_TEST_DURATION_SECONDS)
+      setWpm(0)
+    },
+    [resetTypingState]
+  )
 
-  const finishTest = useCallback(() => {
-    const correctCharacters = countCorrectCharacters(
-      targetRef.current,
-      typedByIndexRef.current,
-      cursorRef.current
-    )
-    setWpm(calculateWpm(correctCharacters, PRACTICE_TEST_DURATION_SECONDS))
-    setPhase("finished")
-  }, [])
-
-  const startTest = useCallback(() => {
-    const initialText = generatePracticePhrase(
-      generateOptions(PRACTICE_INITIAL_WORD_COUNT)
-    )
-    targetRef.current = initialText
-    resetTypingState()
-    setTargetText(initialText)
-    setSecondsLeft(PRACTICE_TEST_DURATION_SECONDS)
-    setWpm(0)
-    setPhase("running")
-  }, [generateOptions, resetTypingState])
+  const stopActiveTest = useCallback(() => {
+    inputUnsubscribeRef.current?.()
+    inputUnsubscribeRef.current = null
+    setSoundEnabled(false)
+  }, [setSoundEnabled])
 
   const applyInput = useCallback((input: TypingInput) => {
     const target = targetRef.current
@@ -134,9 +122,42 @@ export function WritingPractice() {
     setTypedByIndex(new Map(typedByIndexRef.current))
   }, [])
 
+  const finishTest = useCallback(() => {
+    stopActiveTest()
+    const correctCharacters = countCorrectCharacters(
+      targetRef.current,
+      typedByIndexRef.current,
+      cursorRef.current
+    )
+    setWpm(calculateWpm(correctCharacters, PRACTICE_TEST_DURATION_SECONDS))
+    setPhase("finished")
+  }, [stopActiveTest])
+
+  const startTest = useCallback(() => {
+    stopActiveTest()
+    const initialText = generatePracticePhrase(
+      generateOptions(PRACTICE_INITIAL_WORD_COUNT)
+    )
+    targetRef.current = initialText
+    resetTypingState()
+    setTargetText(initialText)
+    setSecondsLeft(PRACTICE_TEST_DURATION_SECONDS)
+    setWpm(0)
+    setPhase("running")
+    setSoundEnabled(true)
+    inputUnsubscribeRef.current = subscribeToInput(applyInput)
+  }, [
+    applyInput,
+    generateOptions,
+    resetTypingState,
+    setSoundEnabled,
+    stopActiveTest,
+    subscribeToInput,
+  ])
+
   useEffect(() => {
-    resetTest()
-  }, [resetTest])
+    loadIdlePhrase(false)
+  }, [loadIdlePhrase])
 
   useEffect(() => {
     if (phase !== "running") return
@@ -152,12 +173,6 @@ export function WritingPractice() {
       })
     }, 1000)
 
-    return () => window.clearInterval(timer)
-  }, [finishTest, phase])
-
-  useEffect(() => {
-    if (phase !== "running") return
-
     const appendWords = window.setInterval(() => {
       const addition = generatePracticePhrase(
         generateOptions(PRACTICE_APPEND_WORD_COUNT)
@@ -169,23 +184,20 @@ export function WritingPractice() {
       })
     }, PRACTICE_WORDS_BATCH_INTERVAL_MS)
 
-    return () => window.clearInterval(appendWords)
-  }, [generateOptions, phase])
+    return () => {
+      window.clearInterval(timer)
+      window.clearInterval(appendWords)
+    }
+  }, [finishTest, generateOptions, phase])
 
-  useEffect(() => {
-    setSoundEnabled(phase === "running")
-    return () => setSoundEnabled(false)
-  }, [phase, setSoundEnabled])
-
-  useEffect(() => {
-    if (phase !== "running") return
-
-    return subscribeToInput(applyInput)
-  }, [applyInput, phase, subscribeToInput])
+  useEffect(() => () => stopActiveTest(), [stopActiveTest])
 
   function togglePunctuation() {
     if (phase === "running") return
-    setIncludePunctuation((current) => !current)
+
+    const next = !includePunctuation
+    setIncludePunctuation(next)
+    loadIdlePhrase(next)
   }
 
   return (

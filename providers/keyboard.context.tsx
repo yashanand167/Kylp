@@ -87,6 +87,9 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const pressKeyRef = useRef(pressKey)
+  pressKeyRef.current = pressKey
+
   useEffect(() => {
     function handleKeyDown(event: KeyboardEvent) {
       if (event.repeat) return
@@ -95,7 +98,7 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
       const keyId = codeToKeyId(event.code)
       if (!keyId || !KEY_CONFIGS[keyId]) return
 
-      pressKey(keyId, event)
+      pressKeyRef.current(keyId, event)
       event.preventDefault()
       setPressedKeys((current) => new Set(current).add(keyId))
     }
@@ -121,7 +124,7 @@ export function KeyboardProvider({ children }: { children: ReactNode }) {
       window.removeEventListener("keydown", handleKeyDown)
       window.removeEventListener("keyup", handleKeyUp)
     }
-  }, [pressKey])
+  }, [])
 
   return (
     <KeyboardContext.Provider
